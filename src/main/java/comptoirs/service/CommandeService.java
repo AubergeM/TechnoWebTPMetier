@@ -149,7 +149,9 @@ public class CommandeService {
             for (Ligne l : commande.getLignes()) {
                 Produit p = l.getProduit();
                 int unitesEnStock = p.getUnitesEnStock();
+                int unitesCommande = p.getUnitesCommandees();
                 unitesEnStock -= l.getQuantite();
+                unitesCommande -= l.getQuantite();
                 l.setQuantite(unitesEnStock);
             }
         } else {
