@@ -7,7 +7,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.transaction.annotation.Transactional;
-
+import comptoirs.entity.Produit;
 import comptoirs.dao.ClientRepository;
 import comptoirs.dao.CommandeRepository;
 import comptoirs.dao.LigneRepository;
@@ -106,9 +106,22 @@ public class CommandeService {
      */
     @Transactional
     public Ligne ajouterLigne(int commandeNum, int produitRef, @Positive int quantite) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        var verifProduit = produitDao.findById(produitRef).orElseThrow();
+        var verifCommande = commandeDao.findById(commandeNum).orElseThrow();
+        Ligne ligne = new Ligne();
+
+        if (verifCommande == null && quantite > 0 && verifProduit.getUnitesEnStock() >= quantite) {
+            ligne.setProduit(verifProduit);
+            ligne.setQuantite(quantite);
+            ligne.setCommande(verifCommande);
+
+            ligneDao.save(ligne);
+            verifProduit.setUnitesCommandees(verifProduit.getUnitesCommandees() + quantite);
+            produitDao.save(verifProduit);
+        }
+        return ligne;
     }
+
 
     /**
      * Service métier : Enregistre l'expédition d'une commande connue par sa clé
@@ -130,7 +143,18 @@ public class CommandeService {
      */
     @Transactional
     public Commande enregistreExpedition(int commandeNum) {
-        // TODO : implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        var commande = commandeDao.findById(commandeNum).orElseThrow();
+        if (commande.getEnvoyeele() == null) {
+            commande.setEnvoyeele(LocalDate.now());
+            for (Ligne l : commande.getLignes()) {
+                Produit p = l.getProduit();
+                int unitesEnStock = p.getUnitesEnStock();
+                unitesEnStock -= l.getQuantite();
+                l.setQuantite(unitesEnStock);
+            }
+        } else {
+            throw new IllegalArgumentException();
+        }
+        return commande;
     }
 }
